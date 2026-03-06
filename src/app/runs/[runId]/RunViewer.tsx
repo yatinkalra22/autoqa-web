@@ -15,7 +15,7 @@ export function RunViewer({ runId }: { runId: string }) {
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col">
       {/* Run Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 lg:px-6 py-4 border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-4">
           <Link href="/" className="text-gray-500 hover:text-white transition-colors">
             <ArrowLeft className="w-5 h-5" />
@@ -53,10 +53,10 @@ export function RunViewer({ runId }: { runId: string }) {
         </div>
       </div>
 
-      {/* 2-Column Content */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* 2-Column Content (stacks on mobile) */}
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         {/* Left - Screenshot + Summary */}
-        <div className="flex-[6] flex flex-col p-6 gap-4 overflow-auto border-r border-gray-800">
+        <div className="lg:flex-[6] flex flex-col p-4 lg:p-6 gap-4 overflow-auto lg:border-r border-b lg:border-b-0 border-gray-800">
           <ScreenshotViewer
             screenshotDataUrl={currentScreenshot}
             annotation={steps[steps.length - 1]?.annotation}
@@ -106,7 +106,7 @@ export function RunViewer({ runId }: { runId: string }) {
         </div>
 
         {/* Right - Narration + Steps */}
-        <div className="flex-[4] flex flex-col overflow-hidden">
+        <div className="lg:flex-[4] flex flex-col overflow-hidden min-h-[300px] lg:min-h-0">
           <NarrationTerminal narrations={narrations} status={status} />
           <StepsTimeline steps={steps} />
         </div>

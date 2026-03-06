@@ -10,9 +10,9 @@
 
 ## Phase 3: Core UI (Frontend)
 - [x] **3a** Root layout, globals.css, fonts (Inter + JetBrains Mono)
-- [ ] **3b** Header + NavLink components
-- [ ] **3c** Home page with hero + TestBuilder + QuickPrompts
-- [ ] **3d** UI components: StatusBadge, Button, Spinner
+- [x] **3b** Header + NavLink components
+- [x] **3c** Home page with hero + TestBuilder + QuickPrompts
+- [x] **3d** UI components: StatusBadge, Button, Spinner
 
 ## Phase 4: Backend Core
 - [x] **4a** Server bootstrap (Fastify + CORS + WebSocket)
@@ -33,22 +33,22 @@
 - [x] **6c** Full test runner worker (orchestrates planner + detector + executor)
 
 ## Phase 7: Live Run UI (Frontend)
-- [ ] **7a** Run page + RunViewer component
-- [ ] **7b** useRunSocket hook (WebSocket real-time)
-- [ ] **7c** useElapsed hook
-- [ ] **7d** ScreenshotViewer component
-- [ ] **7e** NarrationTerminal component
-- [ ] **7f** StepsTimeline component
+- [x] **7a** Run page + RunViewer component
+- [x] **7b** useRunSocket hook (WebSocket real-time)
+- [x] **7c** useElapsed hook
+- [x] **7d** ScreenshotViewer component
+- [x] **7e** NarrationTerminal component
+- [x] **7f** StepsTimeline component
 
 ## Phase 8: Reports & Library
 - [x] **8a** Backend: Screenshot annotator (Sharp)
 - [x] **8b** Backend: HTML report generator + serving route
-- [ ] **8c** Frontend: Library page (saved tests, run, delete)
-- [ ] **8d** Backend: AI test suggester endpoint
+- [x] **8c** Frontend: Library page (saved tests, run, delete)
+- [x] **8d** Backend: AI test suggester endpoint
 
 ## Phase 9: Polish & Deploy
-- [ ] **9a** Docker-compose (Postgres + Redis)
-- [ ] **9b** Backend Dockerfile
-- [ ] **9c** Mobile responsiveness
-- [ ] **9d** Error handling polish
+- [x] **9a** Docker-compose (Postgres + Redis)
+- [x] **9b** Backend Dockerfile
+- [x] **9c** Mobile responsiveness
+- [x] **9d** Error handling polish
 - [ ] **9e** Deploy to Railway (backend) + Vercel (frontend)
