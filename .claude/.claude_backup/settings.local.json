@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --yes 2>&1)",
+      "Bash(mv .claude /tmp/.claude_backup && mv PLAN.md /tmp/PLAN.md.backup 2>/dev/null; npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --yes 2>&1)"
+    ]
+  }
+}
