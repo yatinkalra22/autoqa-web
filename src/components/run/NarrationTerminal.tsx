@@ -1,12 +1,42 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import {
+  MousePointerClick,
+  Keyboard,
+  ScrollText,
+  Globe,
+  Clock,
+  Move,
+  ChevronRight,
+} from 'lucide-react'
 import type { RunStatus } from '@/types'
 
 interface NarrationEntry {
   step: number
   text: string
   type: 'action' | 'complete' | 'validation' | 'summary'
+  actionType?: string
   success?: boolean
+}
+
+function ActionIcon({ text, actionType }: { text: string; actionType?: string }) {
+  const t = actionType?.toLowerCase() || text.toLowerCase()
+  const cls = 'w-3.5 h-3.5 shrink-0 mt-0.5'
+
+  if (t.includes('click') || t.includes('press'))
+    return <MousePointerClick className={`${cls} text-blue-400`} />
+  if (t.includes('type') || t.includes('input') || t.includes('enter'))
+    return <Keyboard className={`${cls} text-amber-400`} />
+  if (t.includes('scroll'))
+    return <ScrollText className={`${cls} text-purple-400`} />
+  if (t.includes('navigate') || t.includes('go to') || t.includes('url'))
+    return <Globe className={`${cls} text-cyan-400`} />
+  if (t.includes('wait'))
+    return <Clock className={`${cls} text-gray-400`} />
+  if (t.includes('hover') || t.includes('move'))
+    return <Move className={`${cls} text-orange-400`} />
+
+  return <ChevronRight className={`${cls} text-blue-500`} />
 }
 
 export function NarrationTerminal({
@@ -34,7 +64,7 @@ export function NarrationTerminal({
         <div key={i} className="mb-2 animate-slide-up">
           {n.type === 'action' && (
             <div className="flex items-start gap-2">
-              <span className="text-blue-500 shrink-0 mt-0.5">&rsaquo;</span>
+              <ActionIcon text={n.text} actionType={n.actionType} />
               <span className="text-green-400 leading-relaxed">{n.text}</span>
             </div>
           )}

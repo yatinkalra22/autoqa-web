@@ -1,5 +1,6 @@
 import { TestBuilder } from '@/components/test/TestBuilder'
 import { RecentRuns } from '@/components/test/RecentRuns'
+import { HowItWorks } from '@/components/test/HowItWorks'
 
 export default function HomePage() {
   return (
@@ -22,6 +23,8 @@ export default function HomePage() {
       <TestBuilder />
 
       <RecentRuns />
+
+      <HowItWorks />
     </div>
   )
 }
