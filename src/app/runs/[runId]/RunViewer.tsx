@@ -1,6 +1,7 @@
 'use client'
+import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, FileText, RotateCcw, Timer } from 'lucide-react'
+import { ArrowLeft, FileText, RotateCcw, Timer, Copy, Check, Share2 } from 'lucide-react'
 import { useRunSocket } from '@/hooks/useRunSocket'
 import { useElapsed } from '@/hooks/useElapsed'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -11,6 +12,13 @@ import { StepsTimeline } from '@/components/run/StepsTimeline'
 export function RunViewer({ runId }: { runId: string }) {
   const { status, steps, narrations, currentScreenshot, summary, reportUrl, durationMs } = useRunSocket(runId)
   const elapsed = useElapsed(status === 'RUNNING')
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col">
@@ -39,6 +47,16 @@ export function RunViewer({ runId }: { runId: string }) {
             </div>
           )}
 
+          {(status === 'PASS' || status === 'FAIL') && (
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-400 hover:text-white transition-all border border-gray-700"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Share2 className="w-3.5 h-3.5" />}
+              {copied ? 'Copied' : 'Share'}
+            </button>
+          )}
+
           {(status === 'PASS' || status === 'FAIL') && reportUrl && (
             <a
               href={reportUrl}
@@ -47,7 +65,7 @@ export function RunViewer({ runId }: { runId: string }) {
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-white transition-all border border-gray-700"
             >
               <FileText className="w-4 h-4" />
-              View Report
+              Report
             </a>
           )}
         </div>
@@ -79,6 +97,30 @@ export function RunViewer({ runId }: { runId: string }) {
             </div>
           )}
 
+          {/* Result Banner */}
+          {status === 'PASS' && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-green-950/30 border border-green-800/50 animate-fade-in">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                <Check className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <p className="text-green-400 font-semibold text-sm">Test Passed</p>
+                <p className="text-green-300/70 text-xs">{steps.length} steps completed in {((durationMs || 0) / 1000).toFixed(1)}s</p>
+              </div>
+            </div>
+          )}
+          {status === 'FAIL' && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-red-950/30 border border-red-800/50 animate-fade-in">
+              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                <span className="text-red-400 text-lg font-bold">&times;</span>
+              </div>
+              <div>
+                <p className="text-red-400 font-semibold text-sm">Test Failed</p>
+                <p className="text-red-300/70 text-xs">{steps.length} steps — see AI summary below</p>
+              </div>
+            </div>
+          )}
+
           {/* Summary Card */}
           {(status === 'PASS' || status === 'FAIL') && summary && (
             <div className={`p-4 rounded-xl border text-sm ${
@@ -91,8 +133,21 @@ export function RunViewer({ runId }: { runId: string }) {
             </div>
           )}
 
+          {/* Error State */}
+          {status === 'ERROR' && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-red-950/30 border border-red-800/50 animate-fade-in">
+              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                <span className="text-red-400 text-lg font-bold">!</span>
+              </div>
+              <div>
+                <p className="text-red-400 font-semibold text-sm">Error</p>
+                <p className="text-red-300/70 text-xs">Something went wrong during execution</p>
+              </div>
+            </div>
+          )}
+
           {/* Done Actions */}
-          {(status === 'PASS' || status === 'FAIL') && (
+          {(status === 'PASS' || status === 'FAIL' || status === 'ERROR') && (
             <div className="flex gap-3">
               <Link
                 href="/"
