@@ -6,6 +6,7 @@ const PROMPTS = [
   { label: 'Signup', prompt: 'Fill in the signup form with test data, submit, and verify a success message.' },
   { label: 'Search', prompt: 'Search for "laptop" and verify results appear on the page.' },
   { label: 'Contact form', prompt: 'Fill the contact form with name "Test User", email "test@autoqa.app", a message, and submit.' },
+  { label: 'Accessibility', prompt: 'Navigate through the page and check for accessibility issues: color contrast, missing labels, small touch targets, and keyboard navigation.' },
 ]
 
 export function QuickPrompts({ onSelect }: { onSelect: (prompt: string) => void }) {

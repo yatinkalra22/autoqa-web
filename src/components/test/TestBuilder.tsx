@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Globe, Play, ChevronDown, ChevronUp, Save, Wand2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { QuickPrompts } from './QuickPrompts'
+import { A11yAuditPanel } from './A11yAuditPanel'
 import { Spinner } from '@/components/ui/Spinner'
 
 export function TestBuilder() {
@@ -170,6 +171,8 @@ export function TestBuilder() {
             </>
           )}
         </button>
+
+        <A11yAuditPanel url={url} />
       </div>
     </>
   )

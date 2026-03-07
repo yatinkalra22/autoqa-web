@@ -40,4 +40,17 @@ export const api = {
 
   exportPlaywright: (runId: string) =>
     `${BASE}/runs/${runId}/export`,
+
+  auditA11y: (targetUrl: string) =>
+    req<{
+      score: number
+      issues: Array<{
+        severity: 'critical' | 'major' | 'minor'
+        category: string
+        element: string
+        issue: string
+        suggestion: string
+      }>
+      summary: string
+    }>('/a11y', { method: 'POST', body: JSON.stringify({ targetUrl }) }),
 }
