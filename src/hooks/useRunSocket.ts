@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useRef, useState, useCallback } from 'react'
-import type { RunStatus, StepRecord, BoundingBox } from '@/types'
+import { useEffect, useRef, useState } from 'react'
+import type { RunStatus, StepRecord } from '@/types'
 
 interface NarrationEntry {
   step: number
@@ -8,6 +8,9 @@ interface NarrationEntry {
   type: 'action' | 'complete' | 'validation' | 'summary'
   success?: boolean
 }
+
+const MAX_RECONNECT_ATTEMPTS = 5
+const BASE_RECONNECT_DELAY = 1000
 
 export function useRunSocket(runId: string) {
   const [status, setStatus] = useState<RunStatus>('QUEUED')
@@ -18,91 +21,127 @@ export function useRunSocket(runId: string) {
   const [reportUrl, setReportUrl] = useState('')
   const [durationMs, setDurationMs] = useState(0)
   const wsRef = useRef<WebSocket | null>(null)
+  const reconnectAttempts = useRef(0)
+  const isClosed = useRef(false)
 
   useEffect(() => {
-    const wsBase = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001'
-    const ws = new WebSocket(`${wsBase}/ws/runs/${runId}`)
-    wsRef.current = ws
+    isClosed.current = false
 
-    ws.onopen = () => setStatus('RUNNING')
+    function connect() {
+      if (isClosed.current) return
 
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data)
+      const wsBase = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001'
+      const ws = new WebSocket(`${wsBase}/ws/runs/${runId}`)
+      wsRef.current = ws
 
-      switch (msg.type) {
-        case 'run_started':
-          setStatus('RUNNING')
-          break
+      ws.onopen = () => {
+        reconnectAttempts.current = 0
+        setStatus(prev => prev === 'QUEUED' ? 'RUNNING' : prev)
+      }
 
-        case 'step_start':
-          setNarrations(prev => [...prev, {
-            step: msg.step,
-            text: msg.narration || `${msg.action}: "${msg.target}"`,
-            type: 'action',
-          }])
-          break
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data)
+        if (msg.type === 'pong') return
 
-        case 'step_complete':
-          setCurrentScreenshot(msg.screenshotDataUrl)
-          setSteps(prev => [...prev, {
-            step: prev.length + 1,
-            action: msg.action || 'click',
-            target: msg.target || '',
-            reasoning: '',
-            narration: '',
-            success: msg.success,
-            annotation: msg.annotation,
-            durationMs: 0,
-            timestamp: new Date().toISOString(),
-          }])
-          break
+        switch (msg.type) {
+          case 'run_started':
+            setStatus('RUNNING')
+            break
 
-        case 'validation':
-          setNarrations(prev => [...prev, {
-            step: 0,
-            text: msg.message,
-            type: 'validation',
-            success: msg.passed,
-          }])
-          break
+          case 'step_start':
+            setNarrations(prev => [...prev, {
+              step: msg.step,
+              text: msg.narration || `${msg.action}: "${msg.target}"`,
+              type: 'action',
+            }])
+            break
 
-        case 'run_complete':
-          setStatus(msg.status)
-          setSummary(msg.summary)
-          setReportUrl(msg.reportUrl)
-          setDurationMs(msg.durationMs)
-          setNarrations(prev => [...prev, {
-            step: 0,
-            text: msg.summary,
-            type: 'summary',
-            success: msg.status === 'PASS',
-          }])
-          ws.close()
-          break
+          case 'step_complete':
+            setCurrentScreenshot(msg.screenshotDataUrl)
+            setSteps(prev => [...prev, {
+              step: prev.length + 1,
+              action: msg.action || 'click',
+              target: msg.target || '',
+              reasoning: '',
+              narration: '',
+              success: msg.success,
+              annotation: msg.annotation,
+              durationMs: 0,
+              timestamp: new Date().toISOString(),
+            }])
+            break
 
-        case 'error':
+          case 'validation':
+            setNarrations(prev => [...prev, {
+              step: 0,
+              text: msg.message,
+              type: 'validation',
+              success: msg.passed,
+            }])
+            break
+
+          case 'run_complete':
+            setStatus(msg.status)
+            setSummary(msg.summary)
+            setReportUrl(msg.reportUrl)
+            setDurationMs(msg.durationMs)
+            setNarrations(prev => [...prev, {
+              step: 0,
+              text: msg.summary,
+              type: 'summary',
+              success: msg.status === 'PASS',
+            }])
+            isClosed.current = true
+            ws.close()
+            break
+
+          case 'error':
+            setStatus('ERROR')
+            setNarrations(prev => [...prev, {
+              step: msg.step || 0,
+              text: `Error: ${msg.message}`,
+              type: 'validation',
+              success: false,
+            }])
+            break
+        }
+      }
+
+      ws.onclose = () => {
+        if (isClosed.current) return
+        if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
+          const delay = BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts.current)
+          reconnectAttempts.current++
+          setTimeout(connect, delay)
+        } else {
           setStatus('ERROR')
           setNarrations(prev => [...prev, {
-            step: msg.step || 0,
-            text: `Error: ${msg.message}`,
+            step: 0,
+            text: 'Connection lost. Please refresh the page.',
             type: 'validation',
             success: false,
           }])
-          break
+        }
       }
+
+      ws.onerror = () => {
+        // onclose will handle reconnection
+      }
+
+      const ping = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }))
+        }
+      }, 30000)
+
+      ws.addEventListener('close', () => clearInterval(ping))
     }
 
-    ws.onerror = () => setStatus('ERROR')
-
-    const ping = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'ping' }))
-      }
-    }, 30000)
+    connect()
 
     return () => {
-      clearInterval(ping)
-      ws.close()
+      isClosed.current = true
+      wsRef.current?.close()
     }
   }, [runId])
 
