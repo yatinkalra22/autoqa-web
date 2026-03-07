@@ -51,6 +51,15 @@ export const api = {
       currentScreenshot: string
     }>('/compare', { method: 'POST', body: JSON.stringify({ baselineRunId, currentRunId }) }),
 
+  getWebhooks: () =>
+    req<{ webhooks: Array<{ url: string; type: 'slack' | 'generic' }> }>('/settings/webhooks'),
+
+  saveWebhooks: (webhooks: Array<{ url: string; type: 'slack' | 'generic' }>) =>
+    req<{ webhooks: Array<{ url: string; type: 'slack' | 'generic' }> }>('/settings/webhooks', {
+      method: 'PUT',
+      body: JSON.stringify({ webhooks }),
+    }),
+
   auditA11y: (targetUrl: string) =>
     req<{
       score: number
