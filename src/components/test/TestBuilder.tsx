@@ -1,11 +1,12 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Globe, Play, ChevronDown, ChevronUp, Save, Wand2 } from 'lucide-react'
+import { Globe, Play, ChevronDown, ChevronUp, Save, Wand2, Mic, MicOff } from 'lucide-react'
 import { api } from '@/lib/api'
 import { QuickPrompts } from './QuickPrompts'
 import { A11yAuditPanel } from './A11yAuditPanel'
 import { Spinner } from '@/components/ui/Spinner'
+import { useVoiceInput } from '@/hooks/useVoiceInput'
 
 export function TestBuilder() {
   const router = useRouter()
@@ -18,6 +19,9 @@ export function TestBuilder() {
   const [loading, setLoading] = useState(false)
   const [suggesting, setSuggesting] = useState(false)
   const [error, setError] = useState('')
+  const { listening, supported: voiceSupported, toggle: toggleVoice } = useVoiceInput(
+    (transcript) => setPrompt(prev => prev ? `${prev} ${transcript}` : transcript)
+  )
 
   const handleRun = async () => {
     if (!url.trim()) return setError('Please enter a target URL.')
@@ -76,14 +80,41 @@ export function TestBuilder() {
         <div className="mb-5">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-300">Test Instructions</label>
-            <button
-              onClick={handleSuggest}
-              disabled={suggesting || !url.trim()}
-              className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 disabled:text-gray-600 transition-colors"
-            >
-              <Wand2 className="w-3.5 h-3.5" />
-              {suggesting ? 'Analyzing...' : 'AI Suggest'}
-            </button>
+            <div className="flex items-center gap-3">
+              {voiceSupported && (
+                <button
+                  onClick={toggleVoice}
+                  className={`flex items-center gap-1.5 text-xs transition-colors ${
+                    listening
+                      ? 'text-red-400 hover:text-red-300'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  {listening ? (
+                    <>
+                      <MicOff className="w-3.5 h-3.5" />
+                      <span className="flex items-center gap-1">
+                        Stop
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-3.5 h-3.5" />
+                      Voice
+                    </>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={handleSuggest}
+                disabled={suggesting || !url.trim()}
+                className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 disabled:text-gray-600 transition-colors"
+              >
+                <Wand2 className="w-3.5 h-3.5" />
+                {suggesting ? 'Analyzing...' : 'AI Suggest'}
+              </button>
+            </div>
           </div>
           <textarea
             value={prompt}
@@ -91,7 +122,11 @@ export function TestBuilder() {
             placeholder={'Describe what to test in plain English...\n\nExample: "Test login with wrong password and verify an error message appears."'}
             rows={5}
             maxLength={2000}
-            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 resize-none transition-all"
+            className={`w-full bg-gray-800 border rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:ring-1 resize-none transition-all ${
+              listening
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-500/50'
+                : 'border-gray-700 focus:border-blue-500 focus:ring-blue-500/50'
+            }`}
           />
           <div className="flex justify-end mt-1">
             <span className={`text-xs ${prompt.length > 1800 ? 'text-amber-400' : 'text-gray-600'}`}>
