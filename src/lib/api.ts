@@ -41,6 +41,16 @@ export const api = {
   exportPlaywright: (runId: string) =>
     `${BASE}/runs/${runId}/export`,
 
+  compareRuns: (baselineRunId: string, currentRunId: string) =>
+    req<{
+      hasChanges: boolean
+      changeLevel: 'none' | 'minor' | 'moderate' | 'major'
+      differences: Array<{ area: string; description: string; severity: 'low' | 'medium' | 'high' }>
+      summary: string
+      baselineScreenshot: string
+      currentScreenshot: string
+    }>('/compare', { method: 'POST', body: JSON.stringify({ baselineRunId, currentRunId }) }),
+
   auditA11y: (targetUrl: string) =>
     req<{
       score: number

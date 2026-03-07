@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Zap, Library, ClipboardList, Plus } from 'lucide-react'
+import { Zap, Library, ClipboardList, GitCompareArrows, Plus } from 'lucide-react'
 import { NavLink } from './NavLink'
 
 export function Header() {
@@ -15,6 +15,7 @@ export function Header() {
       <nav className="flex items-center gap-1 flex-1">
         <NavLink href="/library" icon={<Library className="w-4 h-4" />} label="Library" />
         <NavLink href="/runs" icon={<ClipboardList className="w-4 h-4" />} label="Runs" />
+        <NavLink href="/compare" icon={<GitCompareArrows className="w-4 h-4" />} label="Compare" />
       </nav>
 
       <Link
