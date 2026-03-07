@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { GitCompareArrows, AlertTriangle, AlertCircle, Info, ArrowRight } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Spinner } from '@/components/ui/Spinner'
@@ -20,11 +21,30 @@ interface CompareResult {
 }
 
 export function CompareView() {
+  const searchParams = useSearchParams()
   const [baselineId, setBaselineId] = useState('')
   const [currentId, setCurrentId] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<CompareResult | null>(null)
   const [error, setError] = useState('')
+  const [autoCompared, setAutoCompared] = useState(false)
+
+  useEffect(() => {
+    const b = searchParams.get('baseline')
+    const c = searchParams.get('current')
+    if (b && c) {
+      setBaselineId(b)
+      setCurrentId(c)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (baselineId && currentId && !autoCompared && searchParams.get('baseline')) {
+      setAutoCompared(true)
+      handleCompare()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baselineId, currentId])
 
   const handleCompare = async () => {
     if (!baselineId.trim() || !currentId.trim()) return
