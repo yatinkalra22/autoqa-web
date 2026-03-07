@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, FileText, RotateCcw, Timer, Copy, Check, Share2 } from 'lucide-react'
+import { ArrowLeft, FileText, RotateCcw, Timer, Copy, Check, Share2, Code2 } from 'lucide-react'
+import { api } from '@/lib/api'
 import { useRunSocket } from '@/hooks/useRunSocket'
 import { useElapsed } from '@/hooks/useElapsed'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -55,6 +56,17 @@ export function RunViewer({ runId }: { runId: string }) {
               {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Share2 className="w-3.5 h-3.5" />}
               {copied ? 'Copied' : 'Share'}
             </button>
+          )}
+
+          {(status === 'PASS' || status === 'FAIL') && (
+            <a
+              href={api.exportPlaywright(runId)}
+              download
+              className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-white transition-all border border-gray-700"
+            >
+              <Code2 className="w-4 h-4" />
+              Export
+            </a>
           )}
 
           {(status === 'PASS' || status === 'FAIL') && reportUrl && (

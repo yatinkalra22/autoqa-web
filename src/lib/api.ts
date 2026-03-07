@@ -37,4 +37,7 @@ export const api = {
 
   suggestTests: (targetUrl: string) =>
     req<{ suggestions: string[] }>('/suggest', { method: 'POST', body: JSON.stringify({ targetUrl }) }),
+
+  exportPlaywright: (runId: string) =>
+    `${BASE}/runs/${runId}/export`,
 }
