@@ -7,6 +7,7 @@ import { QuickPrompts } from './QuickPrompts'
 import { A11yAuditPanel } from './A11yAuditPanel'
 import { Spinner } from '@/components/ui/Spinner'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
+import { normalizeTargetUrl } from '@/lib/utils'
 
 export function TestBuilder() {
   const router = useRouter()
@@ -22,20 +23,24 @@ export function TestBuilder() {
   const { listening, supported: voiceSupported, toggle: toggleVoice } = useVoiceInput(
     (transcript) => setPrompt(prev => prev ? `${prev} ${transcript}` : transcript)
   )
+  const urlValidation = normalizeTargetUrl(url)
+  const hasValidUrl = Boolean(urlValidation.normalizedUrl)
 
   const handleRun = async () => {
-    if (!url.trim()) return setError('Please enter a target URL.')
+    const { normalizedUrl, error: urlError } = normalizeTargetUrl(url)
+    if (urlError || !normalizedUrl) return setError(urlError || 'Please enter a valid URL.')
     if (!prompt.trim()) return setError('Please describe what to test.')
     setError('')
     setLoading(true)
     try {
       const { runId } = await api.createRun({
-        targetUrl: url.trim(),
+        targetUrl: normalizedUrl,
         prompt: prompt.trim(),
         maxSteps,
         saveTest,
         testName,
       })
+      setUrl(normalizedUrl)
       router.push(`/runs/${runId}`)
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to start test. Check the URL and try again.'
@@ -45,10 +50,13 @@ export function TestBuilder() {
   }
 
   const handleSuggest = async () => {
-    if (!url.trim()) return setError('Enter a URL first to get suggestions.')
+    const { normalizedUrl, error: urlError } = normalizeTargetUrl(url)
+    if (urlError || !normalizedUrl) return setError(urlError || 'Enter a valid URL first to get suggestions.')
+    setError('')
     setSuggesting(true)
     try {
-      const { suggestions } = await api.suggestTests(url.trim())
+      const { suggestions } = await api.suggestTests(normalizedUrl)
+      setUrl(normalizedUrl)
       if (suggestions?.[0]) setPrompt(suggestions[0])
     } catch {
       // silently fail on suggestion errors
@@ -108,7 +116,7 @@ export function TestBuilder() {
               )}
               <button
                 onClick={handleSuggest}
-                disabled={suggesting || !url.trim()}
+                disabled={suggesting || !hasValidUrl}
                 className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 disabled:text-gray-600 transition-colors"
               >
                 <Wand2 className="w-3.5 h-3.5" />
@@ -191,7 +199,7 @@ export function TestBuilder() {
 
         <button
           onClick={handleRun}
-          disabled={loading || !url.trim() || !prompt.trim()}
+          disabled={loading || !hasValidUrl || !prompt.trim()}
           className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 rounded-xl font-semibold text-white transition-all hover:shadow-lg hover:shadow-blue-500/20 disabled:cursor-not-allowed"
         >
           {loading ? (

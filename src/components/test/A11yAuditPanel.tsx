@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Accessibility, AlertTriangle, AlertCircle, Info, ChevronDown, ChevronUp } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Spinner } from '@/components/ui/Spinner'
+import { normalizeTargetUrl } from '@/lib/utils'
 
 interface A11yIssue {
   severity: 'critical' | 'major' | 'minor'
@@ -23,14 +24,20 @@ export function A11yAuditPanel({ url }: { url: string }) {
   const [result, setResult] = useState<AuditResult | null>(null)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState(true)
+  const urlValidation = normalizeTargetUrl(url)
+  const hasValidUrl = Boolean(urlValidation.normalizedUrl)
 
   const handleAudit = async () => {
-    if (!url.trim()) return
+    const { normalizedUrl, error: urlError } = normalizeTargetUrl(url)
+    if (urlError || !normalizedUrl) {
+      setError(urlError || 'Please enter a valid URL.')
+      return
+    }
     setLoading(true)
     setError('')
     setResult(null)
     try {
-      const data = await api.auditA11y(url.trim())
+      const data = await api.auditA11y(normalizedUrl)
       setResult(data)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Audit failed')
@@ -60,7 +67,7 @@ export function A11yAuditPanel({ url }: { url: string }) {
     <div className="mt-6">
       <button
         onClick={result ? () => setExpanded(!expanded) : handleAudit}
-        disabled={loading || !url.trim()}
+        disabled={loading || !hasValidUrl}
         className="flex items-center gap-2 text-sm text-gray-400 hover:text-white disabled:text-gray-600 transition-colors"
       >
         <Accessibility className="w-4 h-4" />
