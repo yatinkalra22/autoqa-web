@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { api } from '@/lib/api'
 import type { RunStatus, StepRecord } from '@/types'
 
 interface NarrationEntry {
@@ -11,6 +12,11 @@ interface NarrationEntry {
 
 const MAX_RECONNECT_ATTEMPTS = 5
 const BASE_RECONNECT_DELAY = 1000
+const FINAL_STATUSES: RunStatus[] = ['PASS', 'FAIL', 'ERROR']
+
+function isRunStatus(value: unknown): value is RunStatus {
+  return value === 'QUEUED' || value === 'RUNNING' || value === 'PASS' || value === 'FAIL' || value === 'ERROR'
+}
 
 export function useRunSocket(runId: string) {
   const [status, setStatus] = useState<RunStatus>('QUEUED')
@@ -36,7 +42,6 @@ export function useRunSocket(runId: string) {
 
       ws.onopen = () => {
         reconnectAttempts.current = 0
-        setStatus(prev => prev === 'QUEUED' ? 'RUNNING' : prev)
       }
 
       ws.onmessage = (event) => {
@@ -137,7 +142,34 @@ export function useRunSocket(runId: string) {
       ws.addEventListener('close', () => clearInterval(ping))
     }
 
-    connect()
+    async function hydrateThenConnect() {
+      try {
+        const data = await api.getRun(runId)
+        if (isClosed.current) return
+
+        if (isRunStatus(data?.status)) {
+          setStatus(data.status)
+          if (FINAL_STATUSES.includes(data.status)) {
+            if (Array.isArray(data.steps)) setSteps(data.steps)
+            if (Array.isArray(data.narrations)) setNarrations(data.narrations)
+            if (typeof data.summary === 'string') setSummary(data.summary)
+            if (typeof data.reportUrl === 'string') setReportUrl(data.reportUrl)
+            if (typeof data.durationMs === 'number') setDurationMs(data.durationMs)
+            // Use the final saved screenshot; fall back to last step's annotated screenshot if ever added
+            if (typeof data.lastScreenshotDataUrl === 'string' && data.lastScreenshotDataUrl) {
+              setCurrentScreenshot(data.lastScreenshotDataUrl)
+            }
+            return
+          }
+        }
+      } catch {
+        // Fall back to websocket-only mode if hydrate fails.
+      }
+
+      connect()
+    }
+
+    hydrateThenConnect()
 
     return () => {
       isClosed.current = true

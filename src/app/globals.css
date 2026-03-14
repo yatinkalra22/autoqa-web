@@ -130,3 +130,50 @@
 .hover\:shadow-purple-500\/20:hover {
   --tw-shadow-color: color-mix(in srgb, var(--theme-accent) 35%, transparent) !important;
 }
+
+/* Status colors tuned for light theme */
+.bg-red-950,
+.bg-red-950\/50,
+.bg-red-950\/30,
+.bg-red-950\/20 {
+  background-color: #fde8e8 !important;
+}
+
+.border-red-800,
+.border-red-800\/50,
+.border-red-700,
+.border-red-600,
+.border-red-500 {
+  border-color: #e7a8a8 !important;
+}
+
+.text-red-400,
+.text-red-300 {
+  color: #b13a3a !important;
+}
+
+.bg-amber-950,
+.bg-amber-950\/50,
+.bg-amber-950\/30,
+.bg-amber-950\/20 {
+  background-color: #fff1df !important;
+}
+
+.border-amber-800,
+.border-amber-800\/50,
+.border-amber-700,
+.border-amber-600,
+.border-amber-500 {
+  border-color: #efc18d !important;
+}
+
+.text-amber-400,
+.text-amber-300 {
+  color: #a9651e !important;
+}
+
+.text-green-400,
+.text-green-300,
+.text-green-400\/80 {
+  color: #21714b !important;
+}

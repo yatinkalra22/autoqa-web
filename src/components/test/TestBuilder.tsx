@@ -43,7 +43,10 @@ export function TestBuilder() {
       setUrl(normalizedUrl)
       router.push(`/runs/${runId}`)
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to start test. Check the URL and try again.'
+      const rawMessage = e instanceof Error ? e.message : 'Failed to start test. Check the URL and try again.'
+      const message = /^HTTP 5\d\d$/.test(rawMessage)
+        ? 'Could not start the test right now. Please check that the API server is running and try again.'
+        : rawMessage
       setError(message)
       setLoading(false)
     }
