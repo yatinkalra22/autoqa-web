@@ -20,7 +20,7 @@ export function TestBuilder() {
   const [loading, setLoading] = useState(false)
   const [suggesting, setSuggesting] = useState(false)
   const [error, setError] = useState('')
-  const { listening, supported: voiceSupported, toggle: toggleVoice } = useVoiceInput(
+  const { listening, supported: voiceSupported, toggle: toggleVoice, error: voiceError } = useVoiceInput(
     (transcript) => setPrompt(prev => prev ? `${prev} ${transcript}` : transcript)
   )
   const urlValidation = normalizeTargetUrl(url)
@@ -95,24 +95,23 @@ export function TestBuilder() {
               {voiceSupported && (
                 <button
                   onClick={toggleVoice}
-                  className={`flex items-center gap-1.5 text-xs transition-colors ${
+                  title={listening ? 'Stop recording' : 'Dictate test instructions'}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
                     listening
-                      ? 'text-red-400 hover:text-red-300'
-                      : 'text-gray-500 hover:text-gray-300'
+                      ? 'bg-red-50 border-red-300 text-red-600 shadow-sm shadow-red-100'
+                      : 'bg-white border-[#b9cbe8] text-[var(--theme-muted)] hover:border-[var(--theme-accent)] hover:text-[var(--theme-accent)] hover:bg-orange-50'
                   }`}
                 >
                   {listening ? (
                     <>
                       <MicOff className="w-3.5 h-3.5" />
-                      <span className="flex items-center gap-1">
-                        Stop
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                      </span>
+                      <span>Stop</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                     </>
                   ) : (
                     <>
                       <Mic className="w-3.5 h-3.5" />
-                      Voice
+                      <span>Voice</span>
                     </>
                   )}
                 </button>
@@ -191,6 +190,12 @@ export function TestBuilder() {
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500"
               />
             )}
+          </div>
+        )}
+
+        {voiceError && (
+          <div className="mb-4 px-4 py-3 bg-red-950/50 border border-red-800/50 rounded-xl text-red-400 text-sm">
+            {voiceError}
           </div>
         )}
 

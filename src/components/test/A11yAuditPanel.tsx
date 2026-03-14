@@ -64,11 +64,11 @@ export function A11yAuditPanel({ url }: { url: string }) {
   }
 
   return (
-    <div className="mt-6">
+    <div className="mt-4">
       <button
         onClick={result ? () => setExpanded(!expanded) : handleAudit}
         disabled={loading || !hasValidUrl}
-        className="flex items-center gap-2 text-sm text-gray-400 hover:text-white disabled:text-gray-600 transition-colors"
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#b9cbe8] bg-white/60 hover:bg-white hover:border-[var(--theme-accent)] text-sm font-medium text-[var(--theme-muted)] hover:text-[var(--theme-accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
       >
         <Accessibility className="w-4 h-4" />
         {loading ? (

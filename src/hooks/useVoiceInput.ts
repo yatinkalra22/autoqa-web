@@ -32,6 +32,7 @@ declare global {
 export function useVoiceInput(onTranscript: (text: string) => void) {
   const [listening, setListening] = useState(false)
   const [supported, setSupported] = useState(false)
+  const [error, setError] = useState('')
   const recognitionRef = useRef<SpeechRecognition | null>(null)
 
   useEffect(() => {
@@ -68,8 +69,17 @@ export function useVoiceInput(onTranscript: (text: string) => void) {
       }
     }
 
-    recognition.onerror = () => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       setListening(false)
+      if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+        setError('Microphone access denied. Please allow microphone access in your browser settings.')
+      } else if (event.error === 'network') {
+        setError('Voice input requires an internet connection (Chrome streams audio to Google). Check your connection and try again.')
+      } else if (event.error === 'no-speech') {
+        setError('No speech detected. Please speak clearly and try again.')
+      } else if (event.error !== 'aborted') {
+        setError(`Voice input unavailable: ${event.error}`)
+      }
     }
 
     recognition.onend = () => {
@@ -77,6 +87,7 @@ export function useVoiceInput(onTranscript: (text: string) => void) {
     }
 
     recognitionRef.current = recognition
+    setError('')
     recognition.start()
     setListening(true)
   }, [listening, onTranscript])
@@ -87,5 +98,5 @@ export function useVoiceInput(onTranscript: (text: string) => void) {
     }
   }, [])
 
-  return { listening, supported, toggle }
+  return { listening, supported, toggle, error }
 }
