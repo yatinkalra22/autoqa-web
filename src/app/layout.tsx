@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: 'AutoQA - AI Testing Agent',
     template: '%s | AutoQA',
   },
-  description: 'AI that tests your app like a human. No code. No selectors. Just plain English. Powered by Gemini 2.0 Flash.',
+  description: 'AI that tests your app like a human. No code. No selectors. Just plain English. Powered by Gemini 2.5 Flash.',
   keywords: ['AI testing', 'QA automation', 'Gemini', 'browser testing', 'no-code testing'],
   openGraph: {
     title: 'AutoQA - AI Testing Agent',

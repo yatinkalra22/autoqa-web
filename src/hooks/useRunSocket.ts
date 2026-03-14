@@ -67,6 +67,7 @@ export function useRunSocket(runId: string) {
               step: prev.length + 1,
               action: msg.action || 'click',
               target: msg.target || '',
+              value: msg.value,
               reasoning: '',
               narration: '',
               success: msg.success,

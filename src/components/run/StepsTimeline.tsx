@@ -16,7 +16,10 @@ export function StepsTimeline({ steps }: { steps: StepRecord[] }) {
               : <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
             }
             <span className="text-gray-500 w-6 shrink-0">{s.step}.</span>
-            <span className="text-gray-400 truncate">{s.action} — {s.target}</span>
+            <span className="text-gray-400 truncate">
+              {s.action} — {s.target}
+              {s.value && <span className="text-gray-600 ml-1">({s.value})</span>}
+            </span>
           </div>
         ))}
       </div>

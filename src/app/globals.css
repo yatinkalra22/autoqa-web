@@ -172,6 +172,22 @@
   color: #a9651e !important;
 }
 
+.bg-green-950,
+.bg-green-950\/50,
+.bg-green-950\/30,
+.bg-green-950\/20,
+.bg-green-500\/20 {
+  background-color: #eaf7f0 !important;
+}
+
+.border-green-800,
+.border-green-800\/50,
+.border-green-700,
+.border-green-600,
+.border-green-500 {
+  border-color: #b7dfc8 !important;
+}
+
 .text-green-400,
 .text-green-300,
 .text-green-400\/80 {

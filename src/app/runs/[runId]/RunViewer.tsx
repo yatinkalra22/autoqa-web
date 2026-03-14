@@ -111,13 +111,13 @@ export function RunViewer({ runId }: { runId: string }) {
 
           {/* Result Banner */}
           {status === 'PASS' && (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-green-950/30 border border-green-800/50 animate-fade-in">
-              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-white/85 border border-green-800/50 animate-fade-in shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-green-500/20 border border-green-800/50 flex items-center justify-center shrink-0">
                 <Check className="w-5 h-5 text-green-400" />
               </div>
               <div>
                 <p className="text-green-400 font-semibold text-sm">Test Passed</p>
-                <p className="text-green-300/70 text-xs">{steps.length} steps completed in {((durationMs || 0) / 1000).toFixed(1)}s</p>
+                <p className="text-gray-500 text-xs">{steps.length} steps completed in {((durationMs || 0) / 1000).toFixed(1)}s</p>
               </div>
             </div>
           )}
@@ -137,10 +137,10 @@ export function RunViewer({ runId }: { runId: string }) {
           {(status === 'PASS' || status === 'FAIL') && summary && (
             <div className={`p-4 rounded-xl border text-sm ${
               status === 'PASS'
-                ? 'bg-green-950/20 border-green-800/50 text-green-300'
+                ? 'bg-white/85 border-green-800/50 text-gray-300 shadow-sm'
                 : 'bg-red-950/20 border-red-800/50 text-red-300'
             }`}>
-              <p className="font-medium mb-1.5">AI Summary</p>
+              <p className={`font-medium mb-1.5 ${status === 'PASS' ? 'text-green-400' : ''}`}>AI Summary</p>
               <p className="opacity-90 leading-relaxed">{summary}</p>
             </div>
           )}

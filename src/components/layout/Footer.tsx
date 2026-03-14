@@ -9,7 +9,7 @@ export function Footer() {
           <span>AutoQA - AI-powered browser testing</span>
         </div>
         <div className="flex items-center gap-3">
-          <span>Powered by Gemini 2.0 Flash</span>
+          <span>Powered by Gemini 2.5 Flash</span>
           <span className="text-gray-800">|</span>
           <span>Built for Gemini Live Agent Challenge</span>
         </div>

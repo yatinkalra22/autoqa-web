@@ -30,7 +30,7 @@ export const api = {
   getTests: () => req<any[]>('/tests'),
 
   runTest: (id: string) =>
-    req<{ runId: string }>(`/tests/${id}/run`, { method: 'POST' }),
+    req<{ runId: string }>(`/tests/${id}/run`, { method: 'POST', body: JSON.stringify({}) }),
 
   deleteTest: (id: string) =>
     req<void>(`/tests/${id}`, { method: 'DELETE' }),

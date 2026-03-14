@@ -69,9 +69,13 @@ export function NarrationTerminal({
             </div>
           )}
           {n.type === 'validation' && (
-            <div className={`flex items-start gap-2 ${n.success ? 'text-green-400' : 'text-red-400'}`}>
-              <span className="shrink-0">{n.success ? '\u2713' : '\u2717'}</span>
-              <span className="leading-relaxed">{n.text}</span>
+            <div className={`flex items-start gap-2 ${
+              n.success ? 'text-green-400'
+              : n.text.includes('⚠') ? 'text-amber-400'
+              : 'text-red-400'
+            }`}>
+              <span className="shrink-0">{n.success ? '\u2713' : n.text.includes('⚠') ? '⚠' : '\u2717'}</span>
+              <span className="leading-relaxed">{n.text.replace(/^⚠\s*/, '')}</span>
             </div>
           )}
           {n.type === 'summary' && (
