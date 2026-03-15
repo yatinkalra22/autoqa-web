@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Clock, ExternalLink, ClipboardList, GitCompareArrows } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Spinner } from '@/components/ui/Spinner'
 import type { RunStatus } from '@/types'
@@ -15,10 +16,14 @@ interface RunItem {
   status: RunStatus
   durationMs: number | null
   startedAt: string | null
+  userId?: string
+  userName?: string
+  userPhoto?: string
 }
 
 export function RunsListView() {
   const router = useRouter()
+  const { user } = useAuth()
   const [runs, setRuns] = useState<RunItem[]>([])
   const [loading, setLoading] = useState(true)
   const [compareMode, setCompareMode] = useState(false)
@@ -58,8 +63,10 @@ export function RunsListView() {
     <div className="max-w-5xl mx-auto px-4 lg:px-6 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Run History</h1>
-          <p className="text-gray-500 mt-1">All test executions</p>
+          <h1 className="text-2xl font-bold text-white">Your Runs</h1>
+          <p className="text-gray-500 mt-1">
+            Test executions for {user?.displayName?.split(' ')[0] || 'your account'}
+          </p>
         </div>
         {runs.length >= 2 && (
           <div className="flex items-center gap-3">

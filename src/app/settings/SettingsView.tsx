@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Settings, Plus, Trash2, Check, Bell } from 'lucide-react'
+import { Settings, Plus, Trash2, Check, Bell, User, LogOut } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { Spinner } from '@/components/ui/Spinner'
 
 interface WebhookEntry {
@@ -10,6 +11,7 @@ interface WebhookEntry {
 }
 
 export function SettingsView() {
+  const { user, logOut } = useAuth()
   const [webhooks, setWebhooks] = useState<WebhookEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -55,6 +57,45 @@ export function SettingsView() {
         <h1 className="text-2xl font-bold text-white">Settings</h1>
       </div>
 
+      {/* Account Section */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <User className="w-4 h-4 text-gray-400" />
+          <h2 className="text-lg font-semibold text-white">Account</h2>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || ''}
+                className="w-12 h-12 rounded-full border-2 border-[var(--theme-border)]"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-[var(--theme-accent)] flex items-center justify-center text-white font-bold" style={{ color: 'white' }}>
+                {(user?.displayName || 'U')[0]}
+              </div>
+            )}
+            <div>
+              <p className="text-white font-medium">{user?.displayName}</p>
+              <p className="text-sm text-gray-500">{user?.email}</p>
+              <p className="text-xs text-gray-600 mt-0.5">Signed in with Google</p>
+            </div>
+          </div>
+
+          <button
+            onClick={logOut}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-red-50 hover:border-red-200 border border-gray-700 rounded-lg text-sm text-gray-400 hover:text-red-600 transition-all"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign out
+          </button>
+        </div>
+      </div>
+
+      {/* Notifications Section */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
         <div className="flex items-center gap-2 mb-1">
           <Bell className="w-4 h-4 text-gray-400" />

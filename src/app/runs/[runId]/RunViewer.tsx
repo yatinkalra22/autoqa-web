@@ -1,24 +1,95 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, FileText, RotateCcw, Timer, Copy, Check, Share2, Code2 } from 'lucide-react'
+import { ArrowLeft, FileText, RotateCcw, Timer, Copy, Check, Share2, Code2, Link2, Mail } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useRunSocket } from '@/hooks/useRunSocket'
 import { useElapsed } from '@/hooks/useElapsed'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { NarrationTerminal } from '@/components/run/NarrationTerminal'
 import { ScreenshotViewer } from '@/components/run/ScreenshotViewer'
 import { StepsTimeline } from '@/components/run/StepsTimeline'
 
 export function RunViewer({ runId }: { runId: string }) {
-  const { status, steps, narrations, currentScreenshot, summary, reportUrl, durationMs } = useRunSocket(runId)
+  const { status, steps, narrations, currentScreenshot, summary, reportUrl, durationMs, accessError } = useRunSocket(runId)
   const elapsed = useElapsed(status === 'RUNNING')
+  const { user } = useAuth()
   const [copied, setCopied] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [shareLink, setShareLink] = useState('')
+  const [sharing, setSharing] = useState(false)
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href)
+  const handleCopyLink = async () => {
+    const url = shareLink || window.location.href
+    await navigator.clipboard.writeText(url)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleGenerateShareLink = async () => {
+    if (shareLink) {
+      setShareOpen(!shareOpen)
+      return
+    }
+    setSharing(true)
+    try {
+      const { shareId } = await api.createShareLink(runId)
+      const url = `${window.location.origin}/shared/${shareId}`
+      setShareLink(url)
+      setShareOpen(true)
+    } catch {
+      // Fallback to current URL
+      setShareLink(window.location.href)
+      setShareOpen(true)
+    }
+    setSharing(false)
+  }
+
+  const handleOpenReport = async () => {
+    try {
+      const token = await import('@/lib/firebase').then(m => m.getIdToken())
+      const res = await fetch(`/api/reports/${runId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) throw new Error('Failed to load report')
+      const html = await res.text()
+      const win = window.open('', '_blank')
+      if (win) {
+        win.document.write(html)
+        win.document.close()
+      }
+    } catch {
+      // Fallback: try opening directly
+      window.open(`/api/reports/${runId}`, '_blank')
+    }
+  }
+
+  const handleEmailShare = () => {
+    const url = shareLink || window.location.href
+    const subject = `AutoQA Test Report — Run #${runId.slice(0, 8)} (${status})`
+    const body = `${user?.displayName || 'A team member'} shared a test result with you.\n\nStatus: ${status}\nSteps: ${steps.length}\n${summary ? `Summary: ${summary}\n` : ''}\nView the full report: ${url}`
+    window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`)
+  }
+
+  const isDone = status === 'PASS' || status === 'FAIL' || status === 'ERROR'
+
+  if (accessError) {
+    return (
+      <div className="h-[calc(100vh-64px)] flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-800/50 flex items-center justify-center mx-auto mb-4">
+            <Share2 className="w-7 h-7 text-red-400" />
+          </div>
+          <h2 className="text-lg font-semibold text-white mb-2">Access Denied</h2>
+          <p className="text-gray-400 text-sm mb-6">{accessError}</p>
+          <Link href="/" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-500 transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+            Go Home
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -48,37 +119,107 @@ export function RunViewer({ runId }: { runId: string }) {
             </div>
           )}
 
-          {(status === 'PASS' || status === 'FAIL') && (
-            <button
-              onClick={handleCopyLink}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-400 hover:text-white transition-all border border-gray-700"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Share2 className="w-3.5 h-3.5" />}
-              {copied ? 'Copied' : 'Share'}
-            </button>
+          {/* Run by indicator */}
+          {user && isDone && (
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-[var(--theme-muted)]">
+              {user.photoURL && (
+                <img src={user.photoURL} alt="" className="w-4 h-4 rounded-full" referrerPolicy="no-referrer" />
+              )}
+              <span>{user.displayName?.split(' ')[0]}</span>
+            </div>
+          )}
+
+          {isDone && (
+            <div className="relative">
+              <button
+                onClick={handleGenerateShareLink}
+                disabled={sharing}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-400 hover:text-white transition-all border border-gray-700"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Share
+              </button>
+
+              {shareOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-[var(--theme-border)] rounded-xl shadow-lg overflow-hidden z-50 animate-fade-in">
+                  <div className="p-3 border-b border-[var(--theme-border)]">
+                    <p className="text-xs font-medium text-[var(--theme-text)] mb-2">Share this result</p>
+                    <div className="flex gap-2">
+                      <input
+                        readOnly
+                        value={shareLink || window.location.href}
+                        className="flex-1 bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-lg px-3 py-1.5 text-xs text-[var(--theme-text)] truncate"
+                      />
+                      <button
+                        onClick={handleCopyLink}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-[var(--theme-accent)] hover:bg-[var(--theme-accent-hover)] rounded-lg text-xs font-medium text-white transition-colors"
+                        style={{ color: 'white' }}
+                      >
+                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {copied ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-2">
+                    <button
+                      onClick={handleEmailShare}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[var(--theme-text)] hover:bg-[var(--theme-surface)] transition-colors"
+                    >
+                      <Mail className="w-4 h-4 text-[var(--theme-muted)]" />
+                      Share via email
+                    </button>
+                    <button
+                      onClick={() => {
+                        const url = shareLink || window.location.href
+                        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out my test result on AutoQA! ${url}`)}`)
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[var(--theme-text)] hover:bg-[var(--theme-surface)] transition-colors"
+                    >
+                      <Link2 className="w-4 h-4 text-[var(--theme-muted)]" />
+                      Share on X
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {(status === 'PASS' || status === 'FAIL') && (
-            <a
-              href={api.exportPlaywright(runId)}
-              download
+            <button
+              onClick={async () => {
+                try {
+                  const token = await import('@/lib/firebase').then(m => m.getIdToken())
+                  const res = await fetch(api.exportPlaywright(runId), {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                  })
+                  if (!res.ok) throw new Error('Failed')
+                  const text = await res.text()
+                  const blob = new Blob([text], { type: 'text/plain' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `autoqa-test-${runId.slice(0, 8)}.spec.ts`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                } catch {
+                  window.open(api.exportPlaywright(runId), '_blank')
+                }
+              }}
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-white transition-all border border-gray-700"
             >
               <Code2 className="w-4 h-4" />
               Export
-            </a>
+            </button>
           )}
 
           {(status === 'PASS' || status === 'FAIL') && reportUrl && (
-            <a
-              href={reportUrl}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={handleOpenReport}
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-white transition-all border border-gray-700"
             >
               <FileText className="w-4 h-4" />
               Report
-            </a>
+            </button>
           )}
         </div>
       </div>
@@ -159,7 +300,7 @@ export function RunViewer({ runId }: { runId: string }) {
           )}
 
           {/* Done Actions */}
-          {(status === 'PASS' || status === 'FAIL' || status === 'ERROR') && (
+          {isDone && (
             <div className="flex gap-3">
               <Link
                 href="/"

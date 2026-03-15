@@ -1,14 +1,15 @@
 # AutoQA Web
 
-> Frontend for AutoQA - AI-powered browser testing agent. Test any web app with plain English.
+> AI-powered browser testing agent. Test any web app with plain English. Personalized per user via Google sign-in.
 
 ## Tech Stack
 
-- **Next.js 16** - App Router, React 19
-- **TypeScript** - Full type safety
-- **Tailwind CSS** - Dark mode UI
-- **Lucide React** - Icons
-- **WebSocket** - Real-time test execution streaming
+- **Next.js 16** — App Router, React 19
+- **Firebase Auth** — Google sign-in, per-user sessions
+- **TypeScript** — Full type safety
+- **Tailwind CSS** — Light theme UI
+- **Lucide React** — Icons
+- **WebSocket** — Real-time test execution streaming
 
 ## Quick Start
 
@@ -16,125 +17,160 @@
 # 1. Install dependencies
 pnpm install
 
-# 2. Configure environment
-cp .env.example .env.local
-# Update API URLs if needed
+# 2. Configure environment (interactive)
+./scripts/setup-env.sh
 
 # 3. Start development server
 pnpm dev
 ```
 
-Opens on `http://localhost:3000`. Requires the [autoqa-api](https://github.com/your-org/autoqa-api) backend running on port 3001.
+Opens on `http://localhost:3000`. Requires the [autoqa-api](https://github.com/your-org/autoqa-api) backend on port 3001.
+
+### Firebase Setup
+
+1. Create a project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable **Google** sign-in under Authentication > Sign-in method
+3. Add `http://localhost:3000` to Authorized Domains
+4. Copy the Web app config into `.env.local` (or run `./scripts/setup-env.sh`)
+
+Or automate it:
+
+```bash
+./scripts/firebase-setup.sh <YOUR_PROJECT_ID>
+```
 
 ## Pages
 
 | Route | Description |
 |-------|-------------|
-| `/` | Home - Test builder with URL + prompt input |
-| `/runs` | Run history - All past test executions |
-| `/runs/[id]` | Live run view - Real-time screenshot + AI narration |
-| `/library` | Test library - Saved reusable tests |
-| `/compare` | Visual regression - Side-by-side screenshot comparison |
-| `/settings` | Notification webhooks (Slack + generic) |
+| `/` | Home — personalized greeting + test builder |
+| `/runs` | Your run history (scoped to your account) |
+| `/runs/[id]` | Live run view — real-time screenshot + AI narration |
+| `/library` | Your saved reusable tests |
+| `/compare` | Visual regression — side-by-side screenshot comparison |
+| `/settings` | Account info, notification webhooks |
 
 ## Features
 
+### Authentication & Personalization
+- **Google sign-in** — one-click login via Firebase Auth
+- **Per-user sessions** — runs, tests, and settings are scoped to your account
+- **Personalized greeting** — time-based welcome with your name
+- **User menu** — profile photo, account info, sign-out in the header
+- **Account settings** — view your profile and manage sign-out from Settings
+
 ### Test Creation
-- **Natural language test writing** — describe what to test in plain English, no code or selectors needed
-- **AI Suggest** — enter a URL and let Gemini analyze the page to suggest relevant tests
-- **Voice input** — dictate test instructions using Web Speech API (Chrome/Safari)
-- **Quick prompts** — pre-built test templates for common scenarios (login, forms, navigation)
-- **Advanced options** — configure max steps (5-50), save tests for re-use
+- **Natural language** — describe what to test in plain English
+- **AI Suggest** — let Gemini analyze the page and suggest tests
+- **Voice input** — dictate instructions via Web Speech API
+- **Quick prompts** — pre-built templates for common scenarios
+- **Auth profiles** — saved login credentials with auto-matching by domain
 
 ### Live Execution
-- **Real-time browser preview** — live screenshot stream of the AI interacting with your app
-- **AI narration terminal** — see what the AI is thinking and doing in real-time, with action-type icons (click, type, scroll, navigate, wait, hover)
-- **Step timeline** — compact pass/fail list of every action taken
-- **Progress bar** — current step count vs. max steps
-- **Result banner** — PASS/FAIL/ERROR with AI-generated summary explaining why
+- **Real-time browser preview** — live screenshot stream
+- **AI narration terminal** — what the AI is thinking and doing
+- **Step timeline** — compact pass/fail list of every action
+- **Progress bar** — step count vs max steps
+- **Result banner** — PASS/FAIL/ERROR with AI summary
+
+### Sharing & Reports
+- **Share panel** — generate shareable links for completed runs
+- **Email share** — send results with a pre-filled email
+- **Social share** — share on X/Twitter
+- **Export to Playwright** — generate `.spec.ts` test code
+- **HTML report** — full report link from the backend
 
 ### Testing & QA
-- **Test library** — save tests and re-run them with one click
-- **Export to Playwright** — generate real `.spec.ts` test code from any AI run
-- **Visual regression** — compare screenshots between two runs with AI-powered diff analysis (change level: none/minor/moderate/major)
-- **Accessibility audit** — WCAG 2.1 analysis powered by Gemini Vision, with score (0-100), issue categorization (critical/major/minor), element selectors, and fix suggestions
-- **Run comparison mode** — select any two runs from history to compare side-by-side
+- **Test library** — save and re-run tests with one click
+- **Visual regression** — AI-powered screenshot diff (none/minor/moderate/major)
+- **Accessibility audit** — WCAG 2.1 analysis via Gemini Vision
+- **Run comparison** — select two runs to compare side-by-side
 
-### Notifications & Integration
-- **Slack webhooks** — get notified on test pass/fail
+### Notifications
+- **Slack webhooks** — get notified on pass/fail
 - **Generic webhooks** — integrate with any HTTP endpoint
-- **CI/CD webhook trigger** — trigger test runs from your CI pipeline
-
-### UI/UX
-- Mobile responsive dark mode UI
-- Status badges with live indicators (QUEUED, RUNNING, PASS, FAIL, ERROR)
-- Copy shareable link to any test run
-- Error boundaries and 404 handling
 
 ## Architecture
 
 ```
 src/
 ├── app/                          # Next.js App Router
-│   ├── page.tsx                 # Home (TestBuilder)
-│   ├── runs/
-│   │   ├── page.tsx             # Run history list
-│   │   └── [runId]/page.tsx     # Live run viewer
-│   ├── library/page.tsx         # Saved tests
-│   ├── compare/page.tsx         # Visual regression
-│   └── settings/page.tsx        # Webhook config
+│   ├── page.tsx                 # Home (PersonalizedHero + TestBuilder)
+│   ├── layout.tsx               # Root layout (AuthProvider + AuthGuard)
+│   ├── runs/                    # Run history + live viewer
+│   ├── library/                 # Saved tests
+│   ├── compare/                 # Visual regression
+│   └── settings/                # Account + webhooks
 ├── components/
+│   ├── auth/                    # Authentication
+│   │   ├── AuthProvider.tsx     # Firebase auth context
+│   │   ├── AuthGuard.tsx        # Route protection
+│   │   ├── LoginScreen.tsx      # Google sign-in page
+│   │   └── UserMenu.tsx         # Header profile dropdown
 │   ├── test/                    # Test creation
-│   │   ├── TestBuilder.tsx      # Main form (URL + prompt + options)
-│   │   ├── QuickPrompts.tsx     # Pre-built prompt templates
-│   │   ├── A11yAuditPanel.tsx   # Accessibility audit UI
-│   │   ├── HowItWorks.tsx       # Onboarding steps
-│   │   └── RecentRuns.tsx       # Home page recent runs
 │   ├── run/                     # Run execution display
-│   │   ├── ScreenshotViewer.tsx # Live screenshot with status border
-│   │   ├── StepsTimeline.tsx    # Step list with pass/fail icons
-│   │   └── NarrationTerminal.tsx# AI narration log
-│   ├── layout/                  # Header, Footer, NavLink
+│   ├── layout/                  # Header (with UserMenu), Footer, NavLink
 │   └── ui/                      # StatusBadge, Spinner
-├── hooks/
-│   ├── useRunSocket.ts          # WebSocket + run hydration
-│   ├── useVoiceInput.ts         # Web Speech API
-│   └── useElapsed.ts            # Timer
+├── hooks/                       # useRunSocket, useVoiceInput, useElapsed
 ├── lib/
-│   ├── api.ts                   # API client (all endpoints)
+│   ├── api.ts                   # API client (auto-attaches Firebase JWT)
+│   ├── firebase.ts              # Firebase init, auth helpers
 │   └── utils.ts                 # URL validation, helpers
-├── types/index.ts               # TypeScript types
+├── types/                       # TypeScript types
 └── mocks/                       # Quick prompts, tutorial steps
+
+scripts/
+├── firebase-setup.sh            # Automated Firebase project provisioning
+├── deploy.sh                    # Vercel deployment with pre-flight checks
+└── setup-env.sh                 # Interactive .env.local configuration
 ```
 
-### Real-time Data Flow
+### Auth Flow
 
 ```
-TestBuilder (form submit)
-    → api.createRun() → backend creates job → returns runId
-    → router.push(/runs/{runId})
-
-RunViewer (page load)
-    → api.getRun(runId) → hydrate if already complete
-    → useRunSocket(runId) → WebSocket to ws://localhost:3001/ws/runs/{runId}
-        → run_started      → status = RUNNING
-        → step_start       → add narration entry
-        → step_complete    → update screenshot + append step
-        → validation       → show pass/fail message
-        → run_complete     → final status + summary + report URL
-        → error            → show error state
+User visits app
+  → AuthProvider checks Firebase auth state
+  → Not signed in? → LoginScreen (Google sign-in popup)
+  → Signed in? → App renders with user context
+  → API calls include Bearer token (Firebase JWT)
+  → Backend validates JWT and scopes data to user
 ```
 
 ## Deployment
 
-```bash
-# Build for production
-pnpm build
+### Automated (recommended)
 
-# Deploy to Vercel
-vercel
+```bash
+# Preview deployment
+./scripts/deploy.sh
+
+# Production deployment
+./scripts/deploy.sh --production
+```
+
+### Manual
+
+```bash
+pnpm build
+vercel --prod
 ```
 
 Set environment variables in Vercel dashboard:
-- `NEXT_PUBLIC_API_URL` — Backend API URL (e.g., `https://api.autoqa.dev`)
-- `NEXT_PUBLIC_WS_URL` — Backend WebSocket URL (e.g., `wss://api.autoqa.dev`)
+- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_WS_URL`
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+
+### Infrastructure-as-Code
+
+```bash
+# Provision Firebase project + auth + Firestore rules
+./scripts/firebase-setup.sh autoqa-prod
+
+# Deploy with pre-flight validation
+./scripts/deploy.sh --production
+```
+
+See `scripts/` for all automation tooling.

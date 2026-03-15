@@ -1,11 +1,24 @@
+import { getIdToken } from '@/lib/firebase'
+
 const BASE = typeof window !== 'undefined' && process.env.NODE_ENV === 'production'
   ? process.env.NEXT_PUBLIC_API_URL + '/api'
   : '/api'
 
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = await getIdToken()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...Object.fromEntries(
+      Object.entries(options?.headers || {}).filter(([, v]) => typeof v === 'string') as [string, string][]
+    ),
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
     ...options,
+    headers,
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
@@ -107,4 +120,8 @@ export const api = {
 
   matchAuthProfiles: (domain: string) =>
     req<any[]>(`/auth-profiles/match?domain=${encodeURIComponent(domain)}`),
+
+  // Share — generate a public share link for a run
+  createShareLink: (runId: string) =>
+    req<{ shareId: string; shareUrl: string }>(`/runs/${runId}/share`, { method: 'POST', body: JSON.stringify({}) }),
 }

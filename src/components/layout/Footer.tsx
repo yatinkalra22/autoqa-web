@@ -1,6 +1,11 @@
+'use client'
+import { usePathname } from 'next/navigation'
 import { Zap } from 'lucide-react'
 
 export function Footer() {
+  const pathname = usePathname()
+  if (pathname.startsWith('/shared/')) return null
+
   return (
     <footer className="border-t border-gray-800 py-6 px-4 lg:px-6">
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-600">

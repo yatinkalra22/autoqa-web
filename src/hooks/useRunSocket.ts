@@ -26,6 +26,7 @@ export function useRunSocket(runId: string) {
   const [summary, setSummary] = useState('')
   const [reportUrl, setReportUrl] = useState('')
   const [durationMs, setDurationMs] = useState(0)
+  const [accessError, setAccessError] = useState('')
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectAttempts = useRef(0)
   const isClosed = useRef(false)
@@ -163,8 +164,14 @@ export function useRunSocket(runId: string) {
             return
           }
         }
-      } catch {
-        // Fall back to websocket-only mode if hydrate fails.
+      } catch (err: any) {
+        // If user doesn't own this run, show access error
+        if (err?.message?.includes('404') || err?.message?.includes('not found') || err?.message?.includes('Run not found')) {
+          setAccessError('This run belongs to another user. Ask the owner to share it using the Share button.')
+          setStatus('ERROR')
+          return
+        }
+        // Fall back to websocket-only mode if hydrate fails for other reasons.
       }
 
       connect()
@@ -178,5 +185,5 @@ export function useRunSocket(runId: string) {
     }
   }, [runId])
 
-  return { status, steps, narrations, currentScreenshot, summary, reportUrl, durationMs }
+  return { status, steps, narrations, currentScreenshot, summary, reportUrl, durationMs, accessError }
 }

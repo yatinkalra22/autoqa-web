@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Play, Trash2, Clock, BookOpen } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Spinner } from '@/components/ui/Spinner'
 
@@ -19,6 +20,7 @@ interface SavedTest {
 
 export function LibraryView() {
   const router = useRouter()
+  const { user } = useAuth()
   const [tests, setTests] = useState<SavedTest[]>([])
   const [loading, setLoading] = useState(true)
   const [runningId, setRunningId] = useState<string | null>(null)
@@ -48,8 +50,8 @@ export function LibraryView() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Test Library</h1>
-        <p className="text-gray-500 mt-1">Saved tests — run anytime, on any schedule</p>
+        <h1 className="text-2xl font-bold text-white">Your Test Library</h1>
+        <p className="text-gray-500 mt-1">{user?.displayName?.split(' ')[0]}&apos;s saved tests — run anytime, on any schedule</p>
       </div>
 
       {loading ? (
