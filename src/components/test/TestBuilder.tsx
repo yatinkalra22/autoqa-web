@@ -1,7 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Globe, Play, ChevronDown, ChevronUp, Save, Wand2, Mic, MicOff } from 'lucide-react'
+import { Globe, Play, ChevronDown, ChevronUp, Save, Wand2, Mic, MicOff, Lock, Plus, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { QuickPrompts } from './QuickPrompts'
 import { A11yAuditPanel } from './A11yAuditPanel'
@@ -20,11 +20,52 @@ export function TestBuilder() {
   const [loading, setLoading] = useState(false)
   const [suggesting, setSuggesting] = useState(false)
   const [error, setError] = useState('')
+  const [useAuth, setUseAuth] = useState(false)
+  const [authMode, setAuthMode] = useState<'profile' | 'inline'>('profile')
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
+  const [matchedProfiles, setMatchedProfiles] = useState<any[]>([])
+  const [allProfiles, setAllProfiles] = useState<any[]>([])
+  const [loginUrl, setLoginUrl] = useState('')
+  const [credentials, setCredentials] = useState<Array<{ field: string; value: string }>>([
+    { field: 'Email', value: '' },
+    { field: 'Password', value: '' },
+  ])
+  const [submitButton, setSubmitButton] = useState('')
+  const [savingProfile, setSavingProfile] = useState(false)
   const { listening, supported: voiceSupported, toggle: toggleVoice, error: voiceError } = useVoiceInput(
     (transcript) => setPrompt(prev => prev ? `${prev} ${transcript}` : transcript)
   )
   const urlValidation = normalizeTargetUrl(url)
   const hasValidUrl = Boolean(urlValidation.normalizedUrl)
+
+  // Load all auth profiles on mount
+  useEffect(() => {
+    api.getAuthProfiles().then(setAllProfiles).catch(() => {})
+  }, [])
+
+  // Auto-match profiles when URL changes
+  const matchProfiles = useCallback((targetUrl: string) => {
+    try {
+      const domain = new URL(targetUrl).hostname
+      const matches = allProfiles.filter(p =>
+        domain.includes(p.domain) || p.domain.includes(domain)
+      )
+      setMatchedProfiles(matches)
+      // Auto-select if exactly one match
+      if (matches.length === 1 && !selectedProfileId) {
+        setSelectedProfileId(matches[0].id)
+        setUseAuth(true)
+        setAuthMode('profile')
+      }
+    } catch {
+      setMatchedProfiles([])
+    }
+  }, [allProfiles, selectedProfileId])
+
+  useEffect(() => {
+    const { normalizedUrl } = normalizeTargetUrl(url)
+    if (normalizedUrl) matchProfiles(normalizedUrl)
+  }, [url, matchProfiles])
 
   const handleRun = async () => {
     const { normalizedUrl, error: urlError } = normalizeTargetUrl(url)
@@ -33,12 +74,30 @@ export function TestBuilder() {
     setError('')
     setLoading(true)
     try {
+      // Build auth config
+      let authConfig: any = undefined
+      let authProfileId: string | undefined = undefined
+
+      if (useAuth) {
+        if (authMode === 'profile' && selectedProfileId) {
+          authProfileId = selectedProfileId
+        } else if (authMode === 'inline' && loginUrl.trim() && credentials.some(c => c.value.trim())) {
+          authConfig = {
+            loginUrl: loginUrl.trim(),
+            credentials: credentials.filter(c => c.field.trim() && c.value.trim()),
+            ...(submitButton.trim() ? { submitButton: submitButton.trim() } : {}),
+          }
+        }
+      }
+
       const { runId } = await api.createRun({
         targetUrl: normalizedUrl,
         prompt: prompt.trim(),
         maxSteps,
         saveTest,
         testName,
+        auth: authConfig,
+        authProfileId,
       })
       setUrl(normalizedUrl)
       router.push(`/runs/${runId}`)
@@ -145,7 +204,229 @@ export function TestBuilder() {
           </div>
         </div>
 
-        {/* Options */}
+        {/* Auth — always visible */}
+        {/* Smart banner when a saved profile matches the URL */}
+        {matchedProfiles.length > 0 && !useAuth && (
+          <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-blue-950/40 border border-blue-800/40 rounded-xl animate-fade-in">
+            <Lock className="w-4 h-4 text-blue-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <span className="text-sm text-blue-300">
+                Saved login for <span className="font-medium text-blue-200">{matchedProfiles[0].name}</span> detected
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setUseAuth(true)
+                setAuthMode('profile')
+                setSelectedProfileId(matchedProfiles[0].id)
+              }}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition-colors shrink-0"
+            >
+              Use it
+            </button>
+          </div>
+        )}
+
+        {/* Auth toggle — always visible, not hidden in advanced */}
+        <div className="mb-5">
+          <button
+            onClick={() => setUseAuth(!useAuth)}
+            className={`flex items-center gap-2 text-sm transition-colors ${
+              useAuth ? 'text-blue-400' : 'text-gray-500 hover:text-gray-400'
+            }`}
+          >
+            <Lock className="w-4 h-4" />
+            <span>{useAuth ? 'Login enabled' : 'Need to log in first?'}</span>
+            {useAuth && (
+              <span className="ml-1 px-1.5 py-0.5 bg-blue-600/20 text-blue-400 text-[10px] font-medium rounded">ON</span>
+            )}
+          </button>
+
+          {useAuth && (
+            <div className="mt-3 bg-gray-800/50 rounded-xl p-4 space-y-3 border border-gray-700/50 animate-fade-in">
+              {/* Mode toggle: saved profile vs inline */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setAuthMode('profile')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    authMode === 'profile'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  Saved Profile
+                </button>
+                <button
+                  onClick={() => setAuthMode('inline')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    authMode === 'inline'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  Enter Credentials
+                </button>
+              </div>
+
+              {authMode === 'profile' && (
+                <div className="space-y-2">
+                  {matchedProfiles.length > 0 && (
+                    <div className="text-xs text-green-400 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      {matchedProfiles.length} saved profile{matchedProfiles.length > 1 ? 's' : ''} matched for this domain
+                    </div>
+                  )}
+
+                  {allProfiles.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {(matchedProfiles.length > 0 ? matchedProfiles : allProfiles).map(profile => (
+                        <button
+                          key={profile.id}
+                          onClick={() => setSelectedProfileId(
+                            selectedProfileId === profile.id ? null : profile.id
+                          )}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm transition-all ${
+                            selectedProfileId === profile.id
+                              ? 'bg-blue-600/20 border border-blue-500/50 text-white'
+                              : 'bg-gray-800 border border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                          }`}
+                        >
+                          <Lock className="w-3.5 h-3.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{profile.name}</div>
+                            <div className="text-xs text-gray-500 truncate">{profile.domain} — {(profile.credentials as any[]).map((c: any) => c.field).join(', ')}</div>
+                          </div>
+                          {selectedProfileId === profile.id && (
+                            <span className="text-blue-400 text-xs font-medium shrink-0">Selected</span>
+                          )}
+                        </button>
+                      ))}
+                      {matchedProfiles.length > 0 && matchedProfiles.length < allProfiles.length && (
+                        <button
+                          onClick={() => setMatchedProfiles(allProfiles)}
+                          className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
+                        >
+                          Show all {allProfiles.length} profiles
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500">
+                      No saved profiles yet. Switch to &quot;Enter Credentials&quot; to create one.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {authMode === 'inline' && (
+                <div className="space-y-3">
+                  <input
+                    type="url"
+                    value={loginUrl}
+                    onChange={e => setLoginUrl(e.target.value)}
+                    placeholder="Login page URL (e.g. https://app.example.com/login)"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500"
+                  />
+
+                  <div className="space-y-2">
+                    <div className="text-xs text-gray-500">Field names should match form labels or placeholders</div>
+                    {credentials.map((cred, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={cred.field}
+                          onChange={e => {
+                            const next = [...credentials]
+                            next[i] = { ...next[i], field: e.target.value }
+                            setCredentials(next)
+                          }}
+                          placeholder="Field (e.g. Email)"
+                          className="w-32 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500"
+                        />
+                        <input
+                          type={cred.field.toLowerCase().includes('password') ? 'password' : 'text'}
+                          value={cred.value}
+                          onChange={e => {
+                            const next = [...credentials]
+                            next[i] = { ...next[i], value: e.target.value }
+                            setCredentials(next)
+                          }}
+                          placeholder="Value"
+                          className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500"
+                        />
+                        {credentials.length > 1 && (
+                          <button
+                            onClick={() => setCredentials(credentials.filter((_, j) => j !== i))}
+                            className="p-1 text-gray-600 hover:text-red-400 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => setCredentials([...credentials, { field: '', value: '' }])}
+                      className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Add field
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={submitButton}
+                    onChange={e => setSubmitButton(e.target.value)}
+                    placeholder="Submit button text (optional, e.g. 'Log in')"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500"
+                  />
+
+                  {loginUrl.trim() && credentials.some(c => c.value.trim()) && (
+                    <button
+                      onClick={async () => {
+                        setSavingProfile(true)
+                        try {
+                          const domain = new URL(loginUrl).hostname
+                          // Check if a profile already exists for this domain — update instead of creating duplicate
+                          const existing = allProfiles.find(p => p.domain === domain)
+                          const profileData = {
+                            name: `${domain} login`,
+                            domain,
+                            loginUrl: loginUrl.trim(),
+                            credentials: credentials.filter(c => c.field.trim() && c.value.trim()),
+                            ...(submitButton.trim() ? { submitButton: submitButton.trim() } : {}),
+                          }
+                          let profile: any
+                          if (existing) {
+                            profile = await api.updateAuthProfile(existing.id, profileData)
+                            setAllProfiles(prev => prev.map(p => p.id === existing.id ? profile : p))
+                          } else {
+                            profile = await api.createAuthProfile(profileData)
+                            setAllProfiles(prev => [profile, ...prev])
+                          }
+                          setSelectedProfileId(profile.id)
+                          setAuthMode('profile')
+                        } catch {}
+                        setSavingProfile(false)
+                      }}
+                      disabled={savingProfile}
+                      className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 disabled:text-gray-600 transition-colors"
+                    >
+                      <Save className="w-3 h-3" />
+                      {savingProfile ? 'Saving...' : 'Save as profile for future tests'}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div className="text-xs text-gray-600 leading-relaxed">
+                Saved profiles are stored securely and reused across test runs.
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Advanced options — only max steps + save test */}
         <button
           onClick={() => setShowOptions(!showOptions)}
           className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-400 mb-4 transition-colors"

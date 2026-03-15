@@ -21,6 +21,12 @@ export const api = {
     maxSteps: number
     saveTest: boolean
     testName: string
+    auth?: {
+      loginUrl: string
+      credentials: Array<{ field: string; value: string }>
+      submitButton?: string
+    }
+    authProfileId?: string
   }) => req<{ runId: string }>('/runs', { method: 'POST', body: JSON.stringify(body) }),
 
   getRun: (runId: string) => req<any>(`/runs/${runId}`),
@@ -72,4 +78,33 @@ export const api = {
       }>
       summary: string
     }>('/a11y', { method: 'POST', body: JSON.stringify({ targetUrl }) }),
+
+  // Auth profiles
+  getAuthProfiles: () =>
+    req<any[]>('/auth-profiles'),
+
+  getAuthProfile: (id: string) =>
+    req<any>(`/auth-profiles/${id}`),
+
+  createAuthProfile: (body: {
+    name: string
+    domain: string
+    loginUrl: string
+    credentials: Array<{ field: string; value: string }>
+    submitButton?: string
+  }) => req<any>('/auth-profiles', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateAuthProfile: (id: string, body: {
+    name: string
+    domain: string
+    loginUrl: string
+    credentials: Array<{ field: string; value: string }>
+    submitButton?: string
+  }) => req<any>(`/auth-profiles/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  deleteAuthProfile: (id: string) =>
+    req<void>(`/auth-profiles/${id}`, { method: 'DELETE' }),
+
+  matchAuthProfiles: (domain: string) =>
+    req<any[]>(`/auth-profiles/match?domain=${encodeURIComponent(domain)}`),
 }

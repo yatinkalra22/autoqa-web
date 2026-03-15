@@ -31,8 +31,8 @@ export function RecentRuns() {
   return (
     <div className="mt-10">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-medium text-gray-500 tracking-wider uppercase">Recent Runs</h2>
-        <Link href="/runs" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+        <h2 className="text-sm font-medium text-[var(--theme-muted)] tracking-wider uppercase">Recent Runs</h2>
+        <Link href="/runs" className="text-xs text-[var(--theme-accent)] hover:underline transition-colors">
           View all
         </Link>
       </div>
@@ -41,14 +41,14 @@ export function RecentRuns() {
           <Link
             key={run.id}
             href={`/runs/${run.id}`}
-            className="flex items-center justify-between bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl px-4 py-3 transition-all group"
+            className="flex items-center justify-between bg-white/70 border border-[#b9cbe8] hover:bg-white hover:border-[var(--theme-accent)] hover:shadow-sm rounded-xl px-4 py-3 transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <StatusBadge status={run.status} />
-              <span className="text-sm text-gray-400 truncate">{run.prompt}</span>
+              <span className="text-sm text-[var(--theme-text)] truncate">{run.prompt}</span>
             </div>
             {run.durationMs && (
-              <span className="flex items-center gap-1 text-xs text-gray-600 shrink-0 ml-3">
+              <span className="flex items-center gap-1 text-xs text-[var(--theme-muted)] shrink-0 ml-3">
                 <Clock className="w-3 h-3" />
                 {(run.durationMs / 1000).toFixed(1)}s
               </span>
