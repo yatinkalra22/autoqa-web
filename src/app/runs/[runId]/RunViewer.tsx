@@ -48,8 +48,10 @@ export function RunViewer({ runId }: { runId: string }) {
 
   const handleOpenReport = async () => {
     try {
-      const token = await import('@/lib/firebase').then(m => m.getIdToken())
-      const res = await fetch(`/api/reports/${runId}`, {
+      const { getIdToken } = await import('@/lib/firebase')
+      const token = await getIdToken()
+      const base = process.env.NEXT_PUBLIC_API_URL || ''
+      const res = await fetch(`${base}/api/reports/${runId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       if (!res.ok) throw new Error('Failed to load report')
@@ -60,8 +62,7 @@ export function RunViewer({ runId }: { runId: string }) {
         win.document.close()
       }
     } catch {
-      // Fallback: try opening directly
-      window.open(`/api/reports/${runId}`, '_blank')
+      alert('Failed to load report. Please try again.')
     }
   }
 
@@ -202,7 +203,7 @@ export function RunViewer({ runId }: { runId: string }) {
                   a.click()
                   URL.revokeObjectURL(url)
                 } catch {
-                  window.open(api.exportPlaywright(runId), '_blank')
+                  alert('Export failed. Please try again.')
                 }
               }}
               className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-white transition-all border border-gray-700"
