@@ -92,6 +92,7 @@ export function useRunSocket(runId: string) {
             setSummary(msg.summary)
             setReportUrl(msg.reportUrl)
             setDurationMs(msg.durationMs)
+            if (msg.screenshotDataUrl) setCurrentScreenshot(msg.screenshotDataUrl)
             setNarrations(prev => [...prev, {
               step: 0,
               text: msg.summary,
