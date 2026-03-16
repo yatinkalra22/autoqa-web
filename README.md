@@ -46,6 +46,7 @@ Or automate it:
 | `/` | Home — personalized greeting + test builder |
 | `/runs` | Your run history (scoped to your account) |
 | `/runs/[id]` | Live run view — real-time screenshot + AI narration |
+| `/shared/[id]` | Public shared report (no auth required) |
 | `/library` | Your saved reusable tests |
 | `/compare` | Visual regression — side-by-side screenshot comparison |
 | `/settings` | Account info, notification webhooks |
@@ -174,3 +175,7 @@ Set environment variables in Vercel dashboard:
 ```
 
 See `scripts/` for all automation tooling.
+
+### Backend
+
+The backend deploys to GCP Cloud Run. See [autoqa-api/deploy/DEPLOYMENT.md](../autoqa-api/deploy/DEPLOYMENT.md) for the full guide.
