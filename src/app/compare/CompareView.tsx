@@ -20,6 +20,14 @@ interface CompareResult {
   currentScreenshot: string
 }
 
+interface Run {
+  id: string
+  prompt: string
+  targetUrl: string
+  status: string
+  startedAt: string
+}
+
 export function CompareView() {
   const searchParams = useSearchParams()
   const [baselineId, setBaselineId] = useState('')
@@ -28,6 +36,11 @@ export function CompareView() {
   const [result, setResult] = useState<CompareResult | null>(null)
   const [error, setError] = useState('')
   const [autoCompared, setAutoCompared] = useState(false)
+  const [runs, setRuns] = useState<Run[]>([])
+
+  useEffect(() => {
+    api.getRuns().then(setRuns).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const b = searchParams.get('baseline')
@@ -84,21 +97,31 @@ export function CompareView() {
         <p className="text-gray-400 text-sm mb-4">Compare screenshots from two test runs to detect visual changes.</p>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
-          <input
-            type="text"
+          <select
             value={baselineId}
             onChange={e => setBaselineId(e.target.value)}
-            placeholder="Baseline Run ID"
-            className="flex-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-purple-500"
-          />
+            className="flex-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500"
+          >
+            <option value="">Select baseline run...</option>
+            {runs.filter(r => r.id !== currentId).map(r => (
+              <option key={r.id} value={r.id}>
+                #{r.id.slice(0, 8)} — {r.prompt.slice(0, 40)}{r.prompt.length > 40 ? '...' : ''} ({r.status})
+              </option>
+            ))}
+          </select>
           <ArrowRight className="w-5 h-5 text-gray-600 shrink-0 hidden sm:block" />
-          <input
-            type="text"
+          <select
             value={currentId}
             onChange={e => setCurrentId(e.target.value)}
-            placeholder="Current Run ID"
-            className="flex-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-purple-500"
-          />
+            className="flex-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500"
+          >
+            <option value="">Select current run...</option>
+            {runs.filter(r => r.id !== baselineId).map(r => (
+              <option key={r.id} value={r.id}>
+                #{r.id.slice(0, 8)} — {r.prompt.slice(0, 40)}{r.prompt.length > 40 ? '...' : ''} ({r.status})
+              </option>
+            ))}
+          </select>
           <button
             onClick={handleCompare}
             disabled={loading || !baselineId.trim() || !currentId.trim()}
